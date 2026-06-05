@@ -1,0 +1,2058 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DeployFlow CI Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        *, *::before, *::after {
+            transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease, fill 0.3s ease, stroke 0.3s ease;
+        }
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+            --accent-blue: #2563eb;
+            --accent-teal: #14b8a6;
+            --success: #10b981;
+            --font-family: system-ui, -apple-system, sans-serif;
+            --th-bg: rgba(15, 23, 42, 0.4);
+            --code-bg: rgba(15, 23, 42, 0.4);
+            --code-color: #e2e8f0;
+            --badge-bg: rgba(16, 185, 129, 0.1);
+            --badge-color: #10b981;
+            --badge-border: rgba(16, 185, 129, 0.2);
+            --badge-off-bg: rgba(239, 68, 68, 0.1);
+            --badge-off-color: #ef4444;
+            --badge-off-border: rgba(239, 68, 68, 0.2);
+            --badge-build-bg: rgba(37, 99, 235, 0.1);
+            --badge-build-color: #3b82f6;
+            --badge-build-border: rgba(37, 99, 235, 0.2);
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --row-hover: rgba(255, 255, 255, 0.02);
+            --details-bg: rgba(0, 0, 0, 0.15);
+        }
+
+        .light-mode {
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+            --accent-blue: #2563eb;
+            --accent-teal: #0d9488;
+            --success: #059669;
+            --th-bg: #f1f5f9;
+            --code-bg: #f1f5f9;
+            --code-color: #334155;
+            --badge-bg: rgba(5, 150, 105, 0.1);
+            --badge-color: #059669;
+            --badge-border: rgba(5, 150, 105, 0.2);
+            --badge-off-bg: rgba(220, 38, 38, 0.1);
+            --badge-off-color: #dc2626;
+            --badge-off-border: rgba(220, 38, 38, 0.2);
+            --badge-build-bg: rgba(37, 99, 235, 0.1);
+            --badge-build-color: #2563eb;
+            --badge-build-border: rgba(37, 99, 235, 0.2);
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            --row-hover: rgba(0, 0, 0, 0.02);
+            --details-bg: #f8fafc;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: var(--font-family);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        header {
+            border-bottom: 1px solid var(--border-color);
+            padding: 1.5rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: var(--bg-color);
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo-container {
+            width: 96px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 600;
+            letter-spacing: -0.025em;
+        }
+
+        main {
+            flex: 1;
+            padding: 2rem;
+            max-width: 1100px;
+            margin: 0 auto;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .status-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            position: relative;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+
+        .status-info {
+            flex: 1;
+        }
+
+        .status-info h2 {
+            margin: 0 0 0.5rem 0;
+            font-size: 1.25rem;
+        }
+
+        .status-info p {
+            margin: 0;
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            display: none;
+            width: 100%;
+            height: 6px;
+            background-color: var(--border-color);
+            border-radius: 9999px;
+            margin-top: 1.25rem;
+            overflow: hidden;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-blue), var(--accent-teal));
+            border-radius: 9999px;
+            width: 0%;
+            transition: width 0.3s ease-out;
+        }
+        
+        .progress-container.active {
+            display: block;
+        }
+
+        .status-badge {
+            background-color: var(--badge-bg);
+            color: var(--badge-color);
+            border: 1px solid var(--badge-border);
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            white-space: nowrap;
+        }
+
+        .status-badge::before {
+            content: '';
+            display: block;
+            width: 8px;
+            height: 8px;
+            background-color: currentColor;
+            border-radius: 50%;
+        }
+        
+        .status-badge.offline {
+            background-color: var(--badge-off-bg);
+            color: var(--badge-off-color);
+            border-color: var(--badge-off-border);
+        }
+
+        .status-badge.building {
+            background-color: var(--badge-build-bg);
+            color: var(--badge-build-color);
+            border-color: var(--badge-build-border);
+        }
+
+        .status-badge.building::before {
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        .summary-cards {
+            display: flex;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+        .summary-card {
+            flex: 1;
+            min-width: 200px;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+        .summary-card h3 {
+            margin: 0 0 0.5rem 0;
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+        .summary-card .summary-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .table-title {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .table-title h2 {
+            margin: 0;
+            font-size: 1.25rem;
+        }
+
+        .table-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .search-input {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            outline: none;
+            width: 250px;
+            transition: background-color 0.3s, border-color 0.3s, color 0.3s;
+        }
+        .search-input:focus {
+            border-color: var(--accent-blue);
+        }
+
+        .btn {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .btn:hover {
+            background-color: var(--row-hover);
+            border-color: var(--text-muted);
+        }
+        .btn-primary {
+            background-color: var(--accent-blue);
+            color: white;
+            border: none;
+        }
+        .btn-primary:hover {
+            background-color: #1d4ed8;
+            border: none;
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 0.25rem;
+            background-color: var(--card-bg);
+            padding: 0.25rem;
+            border-radius: 0.5rem;
+            border: 1px solid var(--border-color);
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+        .btn-filter {
+            border: none;
+            background: transparent;
+            padding: 0.375rem 0.75rem;
+            color: var(--text-muted);
+            cursor: pointer;
+            border-radius: 0.25rem;
+            transition: color 0.2s, background-color 0.2s;
+        }
+        .btn-filter:hover {
+            color: var(--text-main);
+        }
+        .btn-filter.active {
+            background-color: var(--border-color);
+            color: var(--text-main);
+        }
+
+        .btn-icon {
+            padding: 0.5rem;
+        }
+        .spin {
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            100% { transform: rotate(360deg); }
+        }
+
+        .table-container {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th {
+            background-color: var(--th-bg);
+            padding: 1rem 1.5rem;
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border-color);
+            white-space: nowrap;
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+
+        td {
+            padding: 1rem 1.5rem;
+            font-size: 0.875rem;
+            border-bottom: 1px solid var(--border-color);
+            transition: border-color 0.3s;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tbody tr {
+            transition: background-color 0.2s;
+        }
+        tbody tr.main-row:hover {
+            background-color: var(--row-hover);
+            cursor: pointer;
+        }
+
+        .details-row {
+            display: none;
+            background-color: var(--details-bg);
+        }
+        .details-row.open {
+            display: table-row;
+        }
+        .details-content {
+            padding: 1rem 1.5rem;
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+        }
+
+        .status-cell {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            white-space: nowrap;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .status-dot.success { background-color: var(--success); }
+        .status-dot.pending { background-color: #eab308; }
+        .status-dot.failed { background-color: #ef4444; }
+
+        .commit-msg {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            background-color: var(--code-bg);
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            border: 1px solid var(--border-color);
+            color: var(--code-color);
+            transition: background-color 0.3s, border-color 0.3s, color 0.3s;
+        }
+
+        .triggered-cell {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            white-space: nowrap;
+        }
+
+        .avatar-img {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background-color: var(--border-color);
+            border: 1px solid var(--border-color);
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            border-top: 1px solid var(--border-color);
+            margin-top: 2rem;
+            transition: border-color 0.3s;
+        }
+
+        /* Toast Notifications */
+        .toast-container {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            z-index: 50;
+        }
+        .toast {
+            background-color: var(--card-bg);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            padding: 1rem 1.5rem;
+            border-radius: 0.5rem;
+            box-shadow: var(--shadow);
+            opacity: 0;
+            transform: translateY(1rem);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .toast-icon {
+            color: var(--success);
+        }
+
+        .shortcut-hint {
+            border: 1px solid var(--border-color);
+            border-radius: 0.25rem;
+            padding: 0.125rem 0.375rem;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-left: 0.5rem;
+            font-family: ui-monospace, monospace;
+        }
+
+        /* Toggle Switch */
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: var(--border-color);
+            transition: .3s;
+            border-radius: 24px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+
+        input:checked + .toggle-slider {
+            background-color: var(--success);
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(20px);
+        }
+
+        /* Modal Overlay */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .modal-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+            width: 100%;
+            max-width: 800px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+            transform: scale(0.95);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .modal-overlay.open .modal-content {
+            transform: scale(1);
+        }
+
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            font-size: 1.25rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .modal-close {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+            transition: color 0.2s, background-color 0.2s;
+        }
+
+        .modal-close:hover {
+            color: var(--text-main);
+            background-color: var(--row-hover);
+        }
+
+        .modal-body {
+            padding: 0;
+            overflow-y: auto;
+        }
+        
+        .modal-body pre {
+            margin: 0;
+            border-radius: 0;
+            background-color: var(--bg-color) !important;
+            padding: 1.5rem !important;
+            border: none;
+        }
+
+        /* Build Details Extensions */
+        .details-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+            padding: 1.5rem;
+            border-top: 1px solid var(--border-color);
+            background-color: var(--card-bg);
+        }
+
+        .steps-container h4, .meta-container h4 {
+            margin: 0 0 1rem 0;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .steps-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            border-left: 2px solid var(--border-color);
+            padding-left: 1.25rem;
+            margin-left: 0.5rem;
+        }
+
+        .step-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: relative;
+        }
+
+        .step-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .step-icon {
+            position: absolute;
+            left: -1.8rem;
+            width: 1.2rem;
+            height: 1.2rem;
+            background-color: var(--card-bg);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid var(--border-color);
+        }
+
+        .step-item.success .step-icon {
+            border-color: var(--success);
+            color: var(--success);
+        }
+        .step-item.failed .step-icon {
+            border-color: #ef4444;
+            color: #ef4444;
+        }
+        .step-item.pending .step-icon {
+            border-color: #eab308;
+            color: #eab308;
+        }
+        .step-item.skipped .step-icon {
+            border-color: var(--text-muted);
+            color: var(--text-muted);
+        }
+
+        .step-label {
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+
+        .step-meta {
+            font-family: ui-monospace, monospace;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .meta-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            background-color: var(--bg-color);
+            padding: 1.25rem;
+            border-radius: 0.5rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: flex-start;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .meta-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        .meta-value {
+            font-family: ui-monospace, monospace;
+            font-size: 0.85rem;
+            color: var(--text-main);
+            background-color: var(--code-bg);
+            padding: 0.2rem 0.4rem;
+            border-radius: 0.2rem;
+        }
+
+        /* Timeline and Sparklines */
+        .timeline-container {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            background-color: var(--bg-color);
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            border: 1px solid var(--border-color);
+        }
+        .timeline-stage {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            z-index: 2;
+            flex: 1;
+        }
+        .timeline-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background-color: var(--card-bg);
+            border: 2px solid var(--border-color);
+            margin-bottom: 0.5rem;
+            position: relative;
+        }
+        .timeline-dot.success { border-color: var(--success); background-color: var(--success); }
+        .timeline-dot.failed { border-color: #ef4444; background-color: #ef4444; }
+        .timeline-dot.pending { border-color: var(--border-color); background-color: var(--card-bg); }
+        
+        .timeline-stage::after {
+            content: '';
+            position: absolute;
+            top: 6px;
+            left: 50%;
+            width: 100%;
+            height: 2px;
+            background-color: var(--border-color);
+            z-index: -1;
+        }
+        .timeline-stage:last-child::after {
+            display: none;
+        }
+        .timeline-stage.success::after {
+            background-color: var(--success);
+        }
+        .timeline-stage.failed::after {
+            background-color: #ef4444;
+        }
+        .timeline-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: var(--text-main); }
+        .timeline-time { font-size: 0.7rem; color: var(--text-muted); font-family: monospace; margin-top: 0.25rem; }
+
+        /* Search Dropdown */
+        .search-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100%;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            box-shadow: var(--shadow);
+            z-index: 10;
+            display: none;
+            flex-direction: column;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 0.25rem;
+        }
+        .search-dropdown.open { display: flex; }
+        .search-dropdown-item {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+            color: var(--text-main);
+            cursor: pointer;
+            transition: background-color 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .search-dropdown-item:hover { background-color: var(--row-hover); }
+        .search-dropdown-item .remove-history { color: var(--text-muted); font-size: 0.75rem; }
+        .search-dropdown-item .remove-history:hover { color: #ef4444; }
+
+        /* Settings Tabs */
+        .modal-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 1rem;
+        }
+        .modal-tab {
+            padding: 0.75rem 1.5rem;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+        .modal-tab:hover { color: var(--text-main); }
+        .modal-tab.active {
+            border-bottom-color: var(--accent-blue);
+            color: var(--text-main);
+            font-weight: 500;
+        }
+        .modal-tab-content { display: none; }
+        .modal-tab-content.active { display: block; }
+        
+        /* Sparkline Animation */
+        .sparkline-chart .spark-path {
+            stroke-dasharray: 200;
+            stroke-dashoffset: 200;
+            transition: stroke-dashoffset 1s ease-in-out;
+        }
+        .sparkline-chart:hover .spark-path {
+            stroke-dashoffset: 0;
+        }
+        
+        /* Latest Build Notes */
+        .latest-build-notes {
+            width: 100%;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            box-sizing: border-box;
+            font-size: 0.875rem;
+            resize: vertical;
+            min-height: 80px;
+            margin-bottom: 1.5rem;
+        }
+        .latest-build-notes:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+        }
+        
+        .gh-link-card {
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+            transition: all 0.3s ease;
+        }
+        .gh-link-card:hover {
+            border-color: var(--accent-blue);
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-left">
+            <div class="logo-container">
+                <svg viewBox="0 0 48 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="6" cy="10" r="5" fill="url(#dflow)" />
+                  <path d="M11 10H16" stroke="url(#dflow)" stroke-width="2" />
+                  <circle cx="24" cy="10" r="5" fill="url(#dflow)" />
+                  <path d="M29 10H34" stroke="url(#dflow)" stroke-width="2" />
+                  <circle cx="42" cy="10" r="5" fill="url(#dflow)" />
+                  <defs>
+                    <linearGradient id="dflow" x1="0" y1="0" x2="48" y2="0" gradientUnits="userSpaceOnUse">
+                      <stop stop-color="#2563EB" />
+                      <stop offset="1" stop-color="#14B8A6" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+            </div>
+            <h1>DeployFlow CI</h1>
+        </div>
+        <div class="header-actions">
+            <div class="toggle-container">
+                <span>Auto-deploy on merge</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="auto-deploy-toggle" checked>
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <button class="btn btn-icon" onclick="openSettingsModal()" title="Notification Settings">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+            </button>
+            <button class="btn btn-primary" onclick="openYamlModal()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="16 18 22 12 16 6"></polyline>
+                    <polyline points="8 6 2 12 8 18"></polyline>
+                </svg>
+                View Pipeline YAML
+            </button>
+            <button class="btn btn-icon" id="theme-toggle" title="Toggle Theme">
+                <svg id="theme-icon-dark" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+            <svg id="theme-icon-light" style="display:none;" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="5"></circle>
+                <line x1="12" y1="1" x2="12" y2="3"></line>
+                <line x1="12" y1="21" x2="12" y2="23"></line>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                <line x1="1" y1="12" x2="3" y2="12"></line>
+                <line x1="21" y1="12" x2="23" y2="12"></line>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+        </button>
+    </header>
+
+    <main>
+        <div class="status-card" id="latest-build-card">
+            <div class="status-info">
+                <h2 id="latest-build-title">Checking Server Status...</h2>
+                <p id="latest-build-desc">Fetching latest health check</p>
+                <div class="progress-container" id="build-progress-container">
+                    <div class="progress-bar" id="build-progress-bar"></div>
+                </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <div class="status-badge" style="background-color: var(--accent-blue); display: none;" id="prediction-badge" title="AI Predicted Success Probability">Predicting...</div>
+            <div class="status-badge" id="latest-build-badge">Checking...</div>
+        </div>
+        </div>
+
+        <div class="summary-cards">
+            <div class="summary-card">
+                <h3>Total Builds</h3>
+                <div class="summary-value" id="metric-total">0</div>
+            </div>
+            <div class="summary-card">
+                <h3>Success Rate</h3>
+                <div class="summary-value" id="metric-success">0%</div>
+            </div>
+            <div class="summary-card">
+                <h3>Avg Build Duration</h3>
+                <div class="summary-value" id="metric-duration">0s</div>
+            </div>
+            <div class="summary-card">
+                <h3>Duration Trend (Last 5)</h3>
+                <div id="metric-duration-trend" style="margin-top: 0.5rem;"></div>
+            </div>
+        </div>
+
+        <div class="table-header">
+            <div class="table-title">
+                <h2>Recent Builds</h2>
+                <button class="btn btn-icon" id="refresh-btn" title="Refresh table data">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"></path>
+                        <path d="M21 3v5h-5"></path>
+                    </svg>
+                    <span class="shortcut-hint">R</span>
+                </button>
+            </div>
+            
+            <div class="table-actions">
+                <div style="position: relative; display: flex; align-items: center;">
+                    <input type="text" id="search-input" placeholder="Search commit messages..." class="search-input" autocomplete="off">
+                    <span class="shortcut-hint" style="position: absolute; right: 0.5rem; pointer-events: none;">/</span>
+                    <div id="search-history-dropdown" class="search-dropdown"></div>
+                </div>
+                
+                <div class="filter-group" id="filter-group">
+                    <button class="btn btn-filter active" data-filter="All">All</button>
+                    <button class="btn btn-filter" data-filter="Success">Passed</button>
+                    <button class="btn btn-filter" data-filter="Failed">Failed</button>
+                </div>
+
+                <button class="btn btn-primary" id="compare-action-btn" style="display: none;" onclick="openCompareModal()">Compare (0/2)</button>
+                <button class="btn btn-primary" id="export-pdf-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
+                    Export PDF
+                </button>
+                <button class="btn btn-primary" id="export-csv-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Export CSV
+                </button>
+            </div>
+        </div>
+        
+        <div>
+            <textarea id="latest-build-notes" class="latest-build-notes" placeholder="Add general notes for the latest pipeline run..." oninput="saveLatestBuildNotes()"></textarea>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 30px;"></th>
+                        <th>Build ID</th>
+                        <th>Commit Message</th>
+                        <th>Triggered By</th>
+                        <th onclick="toggleSort('status')" style="cursor: pointer; user-select: none;">Status <span id="sort-status"></span></th>
+                        <th>Trend</th>
+                        <th onclick="toggleSort('duration')" style="cursor: pointer; user-select: none;">Duration <span id="sort-duration"></span></th>
+                        <th onclick="toggleSort('time')" style="cursor: pointer; user-select: none;">Time <span id="sort-time"></span></th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="builds-tbody">
+                    <!-- Dynamic Rows -->
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="table-title" style="margin-top: 2.5rem; margin-bottom: 1rem; align-items: center; display: flex;">
+            <h2 style="display: flex; align-items: center; gap: 0.5rem;">
+                Repository Statistics
+                <span id="gh-api-status" style="width: 10px; height: 10px; border-radius: 50%; background-color: var(--text-muted); display: inline-block;"></span>
+            </h2>
+        </div>
+        <div class="summary-cards" id="github-stats-cards">
+            <a href="https://github.com/docker/cli/stargazers" target="_blank" class="summary-card gh-link-card">
+                <h3>GitHub Stars</h3>
+                <div class="summary-value" id="gh-stars">...</div>
+            </a>
+            <a href="https://github.com/docker/cli/network/members" target="_blank" class="summary-card gh-link-card">
+                <h3>Forks</h3>
+                <div class="summary-value" id="gh-forks">...</div>
+            </a>
+            <a href="https://github.com/docker/cli/issues" target="_blank" class="summary-card gh-link-card">
+                <h3>Open Issues</h3>
+                <div class="summary-value" id="gh-issues">...</div>
+            </a>
+        </div>
+        <div id="gh-last-synced" style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 2rem;"></div>
+    </main>
+
+    <footer>
+        Pipeline powered by GitHub Actions & Docker
+    </footer>
+
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- YAML Modal Overlay -->
+    <div id="settings-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                    </svg>
+                    Notifications Setup
+                </h3>
+                <button class="modal-close" onclick="closeSettingsModal()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body" style="padding: 1.5rem;">
+                <div class="modal-tabs">
+                    <div class="modal-tab active" onclick="switchSettingsTab('notifications')">Notifications</div>
+                    <div class="modal-tab" onclick="switchSettingsTab('logs')">Webhook Logs</div>
+                </div>
+                <div id="tab-notifications" class="modal-tab-content active">
+                    <div style="margin-bottom: 1.5rem;">
+                        <label style="display: block; margin-bottom: 0.5rem; font-size: 0.875rem; font-weight: 500;">Email Notification</label>
+                        <input type="email" placeholder="devops@company.com" class="search-input" style="width: 100%; box-sizing: border-box; margin-bottom: 0.5rem;">
+                        <label style="font-size: 0.8rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="checkbox" checked> Alert on failure
+                        </label>
+                    </div>
+                    <div style="margin-bottom: 1.5rem;">
+                        <label style="display: block; margin-bottom: 0.5rem; font-size: 0.875rem; font-weight: 500;">Slack Webhook URL</label>
+                        <input type="text" placeholder="https://hooks.slack.com/services/..." class="search-input" style="width: 100%; box-sizing: border-box; margin-bottom: 0.5rem;">
+                        <label style="font-size: 0.8rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="checkbox" checked> Alert on failure
+                        </label>
+                    </div>
+                    <button class="btn btn-primary" style="width: 100%; justify-content: center;" onclick="saveSettings()">Save Configuration</button>
+                </div>
+                <div id="tab-logs" class="modal-tab-content">
+                    <div style="font-size: 0.875rem;">
+                        <div style="padding: 0.5rem; border-bottom: 1px solid var(--border-color); display:flex; justify-content:space-between;">
+                            <span><strong style="color:var(--success);">200 OK</strong> - 2 mins ago</span>
+                            <span style="font-family:monospace; color:var(--text-muted);">{"status":"success", "build":"#12"}</span>
+                        </div>
+                        <div style="padding: 0.5rem; border-bottom: 1px solid var(--border-color); display:flex; justify-content:space-between;">
+                            <span><strong style="color:var(--success);">200 OK</strong> - 45 mins ago</span>
+                            <span style="font-family:monospace; color:var(--text-muted);">{"status":"success", "build":"#11"}</span>
+                        </div>
+                        <div style="padding: 0.5rem; display:flex; justify-content:space-between;">
+                            <span><strong style="color:#ef4444;">500 ERR</strong> - 2 hours ago</span>
+                            <span style="font-family:monospace; color:var(--text-muted);">{"error":"timeout", "build":"#10"}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Compare Modal Overlay -->
+    <div id="compare-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 900px;">
+            <div class="modal-header">
+                <h3>Build Comparison</h3>
+                <button class="modal-close" onclick="closeCompareModal()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body" style="padding: 1.5rem; display: flex; gap: 2rem;">
+                <div style="flex: 1;" id="compare-left"></div>
+                <div style="border-left: 1px solid var(--border-color);"></div>
+                <div style="flex: 1;" id="compare-right"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="yaml-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
+                    ci-cd.yml
+                </h3>
+                <button class="modal-close" onclick="closeYamlModal()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <pre><code id="yaml-code-block" class="language-yaml">Loading configuration...</code></pre>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
+    <script>
+        // Mock Build Data with user profiles
+        const allBuilds = [
+            { 
+                id: '#12', commit: 'feat: update ui dashboard layout', user: { name: 'biruk', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=biruk' }, status: 'Success', duration: '1m 24s', time: '2 mins ago', details: '> Task :app:compileDebugJavaWithJavac\\n> Task :app:build\\nBUILD SUCCESSFUL in 1m 24s\\n4 actionable tasks: 4 executed',
+                metadata: { tag: 'v1.0.12', node: 'v20.x', os: 'ubuntu-latest' },
+                trend: [1, 1, 1, 1, 1],
+                timeline: [{st: 'Dev', t: '15s'}, {st: 'Staging', t: '2m'}, {st: 'Production', t: '45s'}],
+                steps: [
+                    { name: 'Lint', status: 'success', time: '14s' },
+                    { name: 'Test', status: 'success', time: '20s' },
+                    { name: 'Build', status: 'success', time: '35s' },
+                    { name: 'Deploy', status: 'success', time: '15s' }
+                ]
+            },
+            { 
+                id: '#11', commit: 'fix: health check endpoint', user: { name: 'sarah-j', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=sarah' }, status: 'Success', duration: '58s', time: '45 mins ago', details: 'Running Jest test suite...\\nPASS src/index.test.js\\nAll checks passed.',
+                metadata: { tag: 'v1.0.11', node: 'v20.x', os: 'ubuntu-latest' },
+                trend: [0, 1, 1, 1, 1],
+                timeline: [{st: 'Dev', t: '8s'}, {st: 'Staging', t: '35s'}, {st: 'Production', t: '15s'}],
+                steps: [
+                    { name: 'Lint', status: 'success', time: '12s' },
+                    { name: 'Test', status: 'success', time: '18s' },
+                    { name: 'Build', status: 'success', time: '18s' },
+                    { name: 'Deploy', status: 'success', time: '10s' }
+                ]
+            },
+            { 
+                id: '#10', commit: 'wip: dockerfile setup', user: { name: 'devops-bot', avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=devops' }, status: 'Failed', duration: '3m 12s', time: '2 hours ago', details: 'Step 4/6 : RUN npm install\\n=> ERROR: npm ERR! code E404\\n=> ERROR: executor failed running [/bin/sh -c npm install]: exit code: 1',
+                metadata: { tag: 'none', node: 'v20.x', os: 'ubuntu-latest' },
+                trend: [1, 1, 0, 1, 0],
+                timeline: [{st: 'Dev', t: '45s'}, {st: 'Staging', t: 'Failed', failed: true}, {st: 'Production', t: 'Skipped', pending: true}],
+                steps: [
+                    { name: 'Lint', status: 'success', time: '15s' },
+                    { name: 'Test', status: 'success', time: '22s' },
+                    { name: 'Build', status: 'failed', time: '2m 35s' },
+                    { name: 'Deploy', status: 'skipped', time: '--' }
+                ]
+            },
+            { 
+                id: '#09', commit: 'chore: add jest tests', user: { name: 'biruk', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=biruk' }, status: 'Success', duration: '2m 05s', time: '1 day ago', details: 'Test Suites: 1 passed, 1 total\\nTests: 2 passed, 2 total\\nSnapshots: 0 total\\nTime: 2.05s',
+                metadata: { tag: 'v1.0.9', node: 'v18.x', os: 'ubuntu-latest' },
+                trend: [1, 0, 0, 1, 1],
+                timeline: [{st: 'Dev', t: '20s'}, {st: 'Staging', t: '1m'}, {st: 'Production', t: '45s'}],
+                steps: [
+                    { name: 'Lint', status: 'success', time: '10s' },
+                    { name: 'Test', status: 'success', time: '35s' },
+                    { name: 'Build', status: 'success', time: '55s' },
+                    { name: 'Deploy', status: 'success', time: '25s' }
+                ]
+            },
+            { 
+                id: '#08', commit: 'Initial commit', user: { name: 'admin-user', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=admin' }, status: 'Success', duration: '1m 45s', time: '3 days ago', details: 'Initial deployment successful. Infrastructure provisioned in render.yaml.',
+                metadata: { tag: 'v1.0.0', node: 'v18.x', os: 'ubuntu-latest' },
+                trend: [1, 1, 1, 1, 1],
+                timeline: [{st: 'Dev', t: '30s'}, {st: 'Staging', t: '45s'}, {st: 'Production', t: '30s'}],
+                steps: [
+                    { name: 'Lint', status: 'success', time: '15s' },
+                    { name: 'Test', status: 'success', time: '20s' },
+                    { name: 'Build', status: 'success', time: '45s' },
+                    { name: 'Deploy', status: 'success', time: '25s' }
+                ]
+            }
+        ];
+
+        let currentFilter = 'All';
+        let currentSearch = '';
+
+        let compareSelection = [];
+        const tbody = document.getElementById('builds-tbody');
+        const metricTotal = document.getElementById('metric-total');
+        const metricSuccess = document.getElementById('metric-success');
+        const metricDuration = document.getElementById('metric-duration');
+        const toastContainer = document.getElementById('toast-container');
+
+        // Functions
+        let sortColumn = null;
+        let sortAsc = true;
+
+        function toggleSort(column) {
+            if (sortColumn === column) {
+                sortAsc = !sortAsc;
+            } else {
+                sortColumn = column;
+                sortAsc = true;
+            }
+            // Update UI
+            document.getElementById('sort-status').textContent = '';
+            document.getElementById('sort-duration').textContent = '';
+            document.getElementById('sort-time').textContent = '';
+            const indicator = sortAsc ? '↑' : '↓';
+            document.getElementById(`sort-${column}`).textContent = indicator;
+            
+            renderTable();
+        }
+
+        function getFilteredBuilds() {
+            let filtered = allBuilds.filter(b => {
+                const matchesFilter = currentFilter === 'All' || b.status === currentFilter;
+                const matchesSearch = b.commit.toLowerCase().includes(currentSearch.toLowerCase());
+                return matchesFilter && matchesSearch;
+            });
+
+            if (sortColumn) {
+                filtered = [...filtered].sort((a, b) => {
+                    let valA, valB;
+                    if (sortColumn === 'status') {
+                        valA = a.status;
+                        valB = b.status;
+                    } else if (sortColumn === 'duration') {
+                        valA = parseDurationToSeconds(a.duration);
+                        valB = parseDurationToSeconds(b.duration);
+                    } else if (sortColumn === 'time') {
+                        const getMinutes = (str) => {
+                            if (str.includes('sec')) return Math.floor((parseInt(str) || 0) / 60);
+                            if (str.includes('min')) return parseInt(str) || 0;
+                            if (str.includes('hour')) return (parseInt(str) || 0) * 60;
+                            if (str.includes('day')) return (parseInt(str) || 0) * 1440;
+                            return 0;
+                        };
+                        valA = getMinutes(a.time);
+                        valB = getMinutes(b.time);
+                    }
+                    if (valA < valB) return sortAsc ? -1 : 1;
+                    if (valA > valB) return sortAsc ? 1 : -1;
+                    return 0;
+                });
+            }
+            return filtered;
+        }
+
+        function parseDurationToSeconds(duration) {
+            let total = 0;
+            const mMatch = duration.match(/(\d+)m/);
+            const sMatch = duration.match(/(\d+)s/);
+            if (mMatch) total += parseInt(mMatch[1], 10) * 60;
+            if (sMatch) total += parseInt(sMatch[1], 10);
+            return total;
+        }
+
+        function generateSparkline(trendArray) {
+            let svg = '<svg class="sparkline-chart" width="50" height="20" viewBox="0 0 50 20" style="display:block;">';
+            svg += '<defs><linearGradient id="spark-grad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--accent-blue)" stop-opacity="0.3"/><stop offset="100%" stop-color="var(--accent-blue)" stop-opacity="0"/></linearGradient></defs>';
+            let points = trendArray.map((t, i) => `${i * 12.5},${t === 1 ? 2 : 18}`);
+            let pathD = `M 0,20 L ${points.join(' L ')} L 50,20 Z`;
+            let lineD = `M ${points.join(' L ')}`;
+            svg += `<path d="${pathD}" fill="url(#spark-grad)" opacity="0.8"/>`;
+            svg += `<path class="spark-path" d="${lineD}" fill="none" stroke="var(--accent-blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`;
+            trendArray.forEach((t, i) => {
+                const x = i * 12.5;
+                const y = t === 1 ? 2 : 18;
+                const color = t === 1 ? 'var(--success)' : '#ef4444';
+                svg += `<circle cx="${x}" cy="${y}" r="2" fill="${color}" />`;
+            });
+            svg += '</svg>';
+            return svg;
+        }
+
+        function renderTrendGraph(durations) {
+            const max = Math.max(...durations, 1);
+            let points = durations.map((d, i) => `${i * 25},${30 - (d / max) * 20}`);
+            let pathD = `M 0,40 L ${points.join(' L ')} L 100,40 Z`;
+            let lineD = `M ${points.join(' L ')}`;
+            const trendEl = document.getElementById('metric-duration-trend');
+            trendEl.innerHTML = `
+                <svg width="100%" height="40" viewBox="0 0 100 40" preserveAspectRatio="none" style="display:block;">
+                    <defs><linearGradient id="trend-grad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--accent-teal)" stop-opacity="0.3"/><stop offset="100%" stop-color="var(--accent-teal)" stop-opacity="0"/></linearGradient></defs>
+                    <path d="${pathD}" fill="url(#trend-grad)" />
+                    <path d="${lineD}" fill="none" stroke="var(--accent-teal)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    ${durations.map((d, i) => `<circle cx="${i * 25}" cy="${30 - (d / max) * 20}" r="2" fill="var(--accent-teal)" />`).join('')}
+                </svg>
+            `;
+        }
+
+        function updateMetrics() {
+            metricTotal.textContent = allBuilds.length;
+            
+            const successCount = allBuilds.filter(b => b.status === 'Success').length;
+            const successRate = allBuilds.length ? Math.round((successCount / allBuilds.length) * 100) : 0;
+            metricSuccess.textContent = `${successRate}%`;
+
+            if (allBuilds.length) {
+                const totalSec = allBuilds.reduce((acc, b) => acc + parseDurationToSeconds(b.duration), 0);
+                const avgSec = Math.round(totalSec / allBuilds.length);
+                const m = Math.floor(avgSec / 60);
+                const s = avgSec % 60;
+                metricDuration.textContent = m > 0 ? `${m}m ${s}s` : `${s}s`;
+                
+                const last5Durations = allBuilds.slice(0, 5).map(b => parseDurationToSeconds(b.duration)).reverse();
+                renderTrendGraph(last5Durations);
+            } else {
+                metricDuration.textContent = '0s';
+                renderTrendGraph([0]);
+            }
+        }
+
+        function renderTable() {
+            const builds = getFilteredBuilds();
+            tbody.innerHTML = '';
+            
+            if (builds.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">No builds match the current filters.</td></tr>';
+                return;
+            }
+
+            builds.forEach((build, index) => {
+                // Main Row
+                const tr = document.createElement('tr');
+                tr.className = 'main-row';
+                tr.onclick = () => toggleDetails(index);
+
+                const statusColor = build.status === 'Success' ? 'success' : 'failed';
+                
+                tr.innerHTML = `
+                    <td onclick="event.stopPropagation()"><input type="checkbox" id="cb-${index}" onclick="toggleCompare(${index})" ${compareSelection.includes(build.id) ? 'checked' : ''}></td>
+                    <td>${build.id}</td>
+                    <td><span class="commit-msg">${build.commit}</span></td>
+                    <td>
+                        <div class="triggered-cell">
+                            <img src="${build.user.avatar}" alt="${build.user.name}" class="avatar-img">
+                            ${build.user.name}
+                        </div>
+                    </td>
+                    <td>
+                        <div class="status-cell">
+                            <div class="status-dot ${statusColor}"></div>
+                            ${build.status}
+                        </div>
+                    </td>
+                    <td>
+                        <div style="display:flex; align-items:flex-end;">
+                            ${generateSparkline(build.trend)}
+                        </div>
+                    </td>
+                    <td>${build.duration}</td>
+                    <td>${build.time}</td>
+                    <td>
+                        <button class="btn" onclick="event.stopPropagation(); toggleDetails(${index})">Details</button>
+                    </td>
+                `;
+
+                // Details Row
+                const detailsTr = document.createElement('tr');
+                detailsTr.className = 'details-row';
+                detailsTr.id = `details-${index}`;
+                
+                let stepsHtml = build.steps.map((step, idxStep) => {
+                    let iconHtml = '';
+                    if (step.status === 'success') {
+                        iconHtml = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+                    } else if (step.status === 'failed') {
+                        iconHtml = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
+                    } else if (step.status === 'pending') {
+                        iconHtml = `<div style="width: 8px; height: 8px; border-radius: 50%; background: currentColor;"></div>`;
+                    } else {
+                        iconHtml = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>`;
+                    }
+                    
+                    return `
+                        <div class="step-item ${step.status}" style="cursor: pointer; padding: 0.5rem; margin: -0.5rem; border-radius: 0.25rem; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='var(--row-hover)'" onmouseout="this.style.backgroundColor='transparent'" onclick="addComment('${build.id}', ${idxStep})">
+                            <div class="step-info">
+                                <div class="step-icon">${iconHtml}</div>
+                                <div style="display:flex; flex-direction:column;">
+                                    <div class="step-label">${step.name}</div>
+                                    ${step.comment ? `<div style="font-size: 0.75rem; color: var(--accent-blue); margin-top: 0.25rem;">📝 ${step.comment}</div>` : ''}
+                                </div>
+                            </div>
+                            <div class="step-meta">${step.time}</div>
+                        </div>
+                    `;
+                }).join('');
+
+                let timelineNodes = build.timeline.map((stage, idx) => {
+                    let dotClass = stage.failed ? 'failed' : (stage.pending ? 'pending' : 'success');
+                    let stageClass = stage.failed ? 'failed' : (stage.pending ? 'pending' : 'success');
+                    return `
+                        <div class="timeline-stage ${stageClass}">
+                            <div class="timeline-dot ${dotClass}"></div>
+                            <div class="timeline-label">${stage.st}</div>
+                            <div class="timeline-time">${stage.t}</div>
+                        </div>
+                    `;
+                }).join('');
+
+                detailsTr.innerHTML = `
+                    <td colspan="9" style="padding: 0;">
+                        <div class="details-grid">
+                            <div class="log-container" style="display:flex; flex-direction:column;">
+                                <h4 style="margin: 0 0 1rem 0; font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); font-weight: 600;">Build Logs</h4>
+                                <div class="details-content" style="padding: 1rem; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 0.5rem; flex: 1;">
+                                    ${build.details.replace(/\\n/g, '<br>')}
+                                </div>
+                            </div>
+                            <div style="display:flex; flex-direction: column; gap: 2rem;">
+                                <div class="steps-container">
+                                    <h4>Pipeline Steps</h4>
+                                    <div class="steps-list">
+                                        ${stepsHtml}
+                                    </div>
+                                </div>
+                                <div class="meta-container">
+                                    <h4>Deployment Pipeline</h4>
+                                    <div class="timeline-container">
+                                        ${timelineNodes}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                `;
+
+                tbody.appendChild(tr);
+                tbody.appendChild(detailsTr);
+            });
+        }
+
+        function toggleDetails(index, forceOpen) {
+            const el = document.getElementById(`details-${index}`);
+            if (el) {
+                if(forceOpen) {
+                    el.classList.add('open');
+                } else {
+                    el.classList.toggle('open');
+                }
+            }
+        }
+
+        function addComment(buildId, stepIdx) {
+            const build = allBuilds.find(b => b.id === buildId);
+            if(!build) return;
+            const step = build.steps[stepIdx];
+            const comment = prompt("Add annotation for " + step.name + ":", step.comment || "");
+            if(comment !== null) {
+                step.comment = comment;
+                renderTable();
+                const index = getFilteredBuilds().findIndex(b => b.id === buildId);
+                if(index !== -1) toggleDetails(index, true); 
+            }
+        }
+
+        function toggleCompare(index) {
+            const build = getFilteredBuilds()[index];
+            if (compareSelection.includes(build.id)) {
+                compareSelection = compareSelection.filter(id => id !== build.id);
+            } else {
+                if (compareSelection.length < 2) {
+                    compareSelection.push(build.id);
+                } else {
+                    showToast('You can only compare 2 builds at a time');
+                    document.getElementById(`cb-${index}`).checked = false;
+                }
+            }
+            updateCompareButton();
+        }
+
+        function updateCompareButton() {
+            const btn = document.getElementById('compare-action-btn');
+            if(compareSelection.length > 0) {
+                btn.style.display = 'inline-flex';
+                btn.textContent = `Compare (${compareSelection.length}/2)`;
+                btn.disabled = compareSelection.length !== 2;
+            } else {
+                btn.style.display = 'none';
+            }
+        }
+
+        function openCompareModal() {
+            if(compareSelection.length !== 2) return;
+            const b1 = allBuilds.find(b => b.id === compareSelection[0]);
+            const b2 = allBuilds.find(b => b.id === compareSelection[1]);
+            
+            const formatBuild = (b) => `
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1rem;">
+                    <h4 style="margin:0; font-size:1.1rem;">${b.id}</h4>
+                    <span class="status-badge ${b.status === 'Success' ? '' : 'offline'}">${b.status}</span>
+                </div>
+                <div style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 1rem;">
+                    <div><strong>Commit:</strong> <span class="commit-msg">${b.commit}</span></div>
+                    <div style="margin-top: 0.5rem;"><strong>Duration:</strong> ${b.duration}</div>
+                </div>
+                <h5 style="margin: 0 0 0.5rem; color: var(--text-main);">Pipeline Steps</h5>
+                <ul style="padding-left: 1.5rem; margin-bottom: 1.5rem; font-size: 0.875rem;">
+                    ${b.steps.map(s => `<li>${s.name} - <span style="font-weight:600" class="${s.status === 'success' ? 'text-success' : 'text-danger'}">${s.status}</span> (${s.time})</li>`).join('')}
+                </ul>
+                <h5 style="margin: 0 0 0.5rem; color: var(--text-main);">Logs Preview</h5>
+                <pre style="background:var(--bg-color); padding:1rem; border-radius:0.5rem; font-size:0.75rem; border:1px solid var(--border-color); overflow-x:auto;">${b.details.replace(/\\n/g, '\n')}</pre>
+            `;
+            
+            document.getElementById('compare-left').innerHTML = formatBuild(b1);
+            document.getElementById('compare-right').innerHTML = formatBuild(b2);
+            document.getElementById('compare-modal').classList.add('open');
+        }
+
+        function closeCompareModal() {
+            document.getElementById('compare-modal').classList.remove('open');
+        }
+        
+        document.getElementById('compare-modal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('compare-modal')) closeCompareModal();
+        });
+
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.innerHTML = `
+                <svg class="toast-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+                <span>${message}</span>
+            `;
+            toastContainer.appendChild(toast);
+            
+            // Trigger reflow & show
+            void toast.offsetWidth;
+            toast.classList.add('show');
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    toast.remove();
+                }, 300);
+            }, 3000);
+        }
+
+        async function checkHealth(simulateBuild = false) {
+            const title = document.getElementById('latest-build-title');
+            const desc = document.getElementById('latest-build-desc');
+            const badge = document.getElementById('latest-build-badge');
+            const pCont = document.getElementById('build-progress-container');
+            const pBar = document.getElementById('build-progress-bar');
+
+            if (simulateBuild) {
+                title.textContent = 'DeployFlow Pipeline - Running';
+                desc.textContent = 'Executing container build and deployments...';
+                badge.textContent = 'Building';
+                badge.className = 'status-badge building';
+                pCont.classList.add('active');
+                
+                // Simulate progress
+                pBar.style.width = '0%';
+                await new Promise(r => setTimeout(r, 100));
+                pBar.style.width = '30%';
+                await new Promise(r => setTimeout(r, 800));
+                pBar.style.width = '75%';
+                await new Promise(r => setTimeout(r, 1000));
+                pBar.style.width = '100%';
+                await new Promise(r => setTimeout(r, 300));
+                
+                pCont.classList.remove('active');
+                pBar.style.width = '0%';
+            } else {
+                title.textContent = 'Checking Server Status...';
+                badge.textContent = 'Checking...';
+                badge.className = 'status-badge';
+            }
+
+            try {
+                const res = await fetch('/health');
+                if (res.ok) {
+                    const data = await res.json();
+                    const d = new Date(data.timestamp);
+                    title.textContent = 'Production API - Healthy';
+                    desc.textContent = `Server responding normally as of ${d.toLocaleTimeString()}`;
+                    badge.textContent = 'Online';
+                    badge.className = 'status-badge';
+                    showToast('Build status updated successfully');
+                } else {
+                    throw new Error('Not OK');
+                }
+            } catch (err) {
+                title.textContent = 'Production API - Unreachable';
+                desc.textContent = 'Health check endpoint failed to respond';
+                badge.textContent = 'Offline';
+                badge.className = 'status-badge offline';
+                showToast('Warning: Unable to reach server');
+                showBrowserNotification('Health Check Failed', { body: 'Unable to reach the server health endpoint.' });
+            }
+        }
+
+        function exportCSV() {
+            const builds = getFilteredBuilds();
+            let csv = 'Build ID,Commit Message,Triggered By,Status,Duration,Time\n';
+            builds.forEach(b => {
+                const commit = b.commit.replace(/"/g, '""');
+                csv += `"${b.id}","${commit}","${b.user.name}","${b.status}","${b.duration}","${b.time}"\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('href', url);
+            a.setAttribute('download', 'deployflow_builds.csv');
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        // Theme Toggle Logic
+        const themeBtn = document.getElementById('theme-toggle');
+        const iconDark = document.getElementById('theme-icon-dark');
+        const iconLight = document.getElementById('theme-icon-light');
+
+        // YAML Modal and Auto-Deploy toggle Logic
+        const yamlModal = document.getElementById('yaml-modal');
+        const yamlCodeBlock = document.getElementById('yaml-code-block');
+        
+        async function openYamlModal() {
+            yamlModal.classList.add('open');
+            try {
+                const res = await fetch('/api/workflow');
+                if (res.ok) {
+                    const text = await res.text();
+                    yamlCodeBlock.textContent = text;
+                    Prism.highlightElement(yamlCodeBlock);
+                } else {
+                    yamlCodeBlock.textContent = '# Failed to load ci-cd.yml.\\n# Check network connection.';
+                    Prism.highlightElement(yamlCodeBlock);
+                }
+            } catch (err) {
+                yamlCodeBlock.textContent = '# Error fetching workflow file.';
+                Prism.highlightElement(yamlCodeBlock);
+            }
+        }
+
+        function closeYamlModal() {
+            yamlModal.classList.remove('open');
+        }
+
+        document.getElementById('auto-deploy-toggle').addEventListener('change', (e) => {
+            const enabled = e.target.checked;
+            showToast(`Auto-deploy on merge is now ${enabled ? 'ENABLED' : 'DISABLED'}`);
+        });
+
+        // Close modal on outside click
+        yamlModal.addEventListener('click', (e) => {
+            if (e.target === yamlModal) closeYamlModal();
+        });
+
+        // Settings Modal
+        const settingsModal = document.getElementById('settings-modal');
+        function openSettingsModal() { settingsModal.classList.add('open'); }
+        function closeSettingsModal() { settingsModal.classList.remove('open'); }
+        function saveSettings() {
+            showToast('Notification settings saved successfully');
+            closeSettingsModal();
+        }
+        settingsModal.addEventListener('click', (e) => {
+            if (e.target === settingsModal) closeSettingsModal();
+        });
+
+        function switchSettingsTab(tab) {
+            document.querySelectorAll('.modal-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.modal-tab-content').forEach(c => c.classList.remove('active'));
+            if(tab === 'notifications') {
+                document.querySelector('.modal-tab[onclick*="notifications"]').classList.add('active');
+                document.getElementById('tab-notifications').classList.add('active');
+            } else {
+                document.querySelector('.modal-tab[onclick*="logs"]').classList.add('active');
+                document.getElementById('tab-logs').classList.add('active');
+            }
+        }
+
+        function toggleTheme() {
+            document.documentElement.classList.toggle('light-mode');
+            const isLight = document.documentElement.classList.contains('light-mode');
+            localStorage.setItem('theme', isLight ? 'light' : 'dark');
+            if (isLight) {
+                iconDark.style.display = 'none';
+                iconLight.style.display = 'block';
+            } else {
+                iconDark.style.display = 'block';
+                iconLight.style.display = 'none';
+            }
+        }
+        themeBtn.addEventListener('click', toggleTheme);
+
+        // Init theme
+        if (localStorage.getItem('theme') === 'light' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: light)').matches)) {
+            toggleTheme();
+        }
+
+        // Global Keyboard Shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Ignore if focus is in an input
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+                return;
+            }
+
+            if (e.key === '/') {
+                e.preventDefault();
+                document.getElementById('search-input').focus();
+            } else if (e.key.toLowerCase() === 'r') {
+                const refreshBtn = document.getElementById('refresh-btn');
+                refreshBtn.click();
+            }
+        });
+
+        // Search Dropdown & History
+        const searchInput = document.getElementById('search-input');
+        const searchDropdown = document.getElementById('search-history-dropdown');
+        let searchHistory = JSON.parse(localStorage.getItem('deployflow_search_history') || '[]');
+
+        function saveSearch(query) {
+            if(!query || query.trim() === '') return;
+            searchHistory = searchHistory.filter(q => q !== query);
+            searchHistory.unshift(query);
+            if(searchHistory.length > 5) searchHistory.pop();
+            localStorage.setItem('deployflow_search_history', JSON.stringify(searchHistory));
+            renderSearchHistory();
+        }
+
+        function removeSearchHistory(e, index) {
+            e.stopPropagation();
+            searchHistory.splice(index, 1);
+            localStorage.setItem('deployflow_search_history', JSON.stringify(searchHistory));
+            renderSearchHistory();
+        }
+
+        function renderSearchHistory() {
+            if(searchHistory.length === 0) {
+                searchDropdown.innerHTML = `<div style="padding: 0.5rem 1rem; font-size: 0.8rem; color: var(--text-muted);">No recent searches</div>`;
+                return;
+            }
+            searchDropdown.innerHTML = searchHistory.map((q, i) => `
+                <div class="search-dropdown-item" onclick="applySearch('${q.replace(/'/g, "\\'")}')">
+                    <span>${q}</span>
+                    <span class="remove-history" onclick="removeSearchHistory(event, ${i})">✕</span>
+                </div>
+            `).join('');
+        }
+
+        function applySearch(q) {
+            searchInput.value = q;
+            currentSearch = q;
+            renderTable();
+            searchDropdown.classList.remove('open');
+            saveSearch(q); 
+        }
+
+        searchInput.addEventListener('input', (e) => {
+            currentSearch = e.target.value;
+            renderTable();
+        });
+
+        searchInput.addEventListener('focus', () => {
+            renderSearchHistory();
+            searchDropdown.classList.add('open');
+        });
+
+        document.addEventListener('click', (e) => {
+            if(!searchInput.contains(e.target) && !searchDropdown.contains(e.target)) {
+                searchDropdown.classList.remove('open');
+            }
+        });
+
+        searchInput.addEventListener('keydown', (e) => {
+            if(e.key === 'Enter') {
+                saveSearch(searchInput.value);
+                searchDropdown.classList.remove('open');
+            }
+        });
+
+        // Event Listeners
+
+        const filterBtns = document.querySelectorAll('.btn-filter');
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                filterBtns.forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                currentFilter = e.target.dataset.filter;
+                renderTable();
+            });
+        });
+
+        document.getElementById('export-csv-btn').addEventListener('click', exportCSV);
+        document.getElementById('export-pdf-btn').addEventListener('click', exportPDF);
+
+        function exportPDF() {
+            try {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                
+                doc.setFontSize(18);
+                doc.text('DeployFlow CI - Build History', 14, 22);
+                
+                doc.setFontSize(11);
+                doc.setTextColor(100);
+                doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 30);
+                
+                const tableColumn = ["Build ID", "Commit", "Triggered By", "Status", "Duration", "Time"];
+                const tableRows = [];
+
+                getFilteredBuilds().forEach(build => {
+                    const rowData = [
+                        build.id,
+                        build.commit,
+                        build.user.name,
+                        build.status,
+                        build.duration,
+                        build.time
+                    ];
+                    tableRows.push(rowData);
+                });
+
+                doc.autoTable({
+                    startY: 35,
+                    head: [tableColumn],
+                    body: tableRows,
+                    theme: 'striped',
+                    headStyles: { fillColor: [37, 99, 235] }, /* var(--accent-blue) */
+                    styles: { fontSize: 9 }
+                });
+
+                doc.save(`deployflow_builds_${new Date().getTime()}.pdf`);
+                showToast('PDF Exported Successfully');
+            } catch (err) {
+                console.error("PDF Export failed:", err);
+                showToast('PDF Export Failed');
+            }
+        }
+
+        const refreshBtn = document.getElementById('refresh-btn');
+        const refreshIcon = refreshBtn.querySelector('svg');
+        refreshBtn.addEventListener('click', async () => {
+            refreshIcon.classList.add('spin');
+            
+            // We simulate a build progress on refresh to demonstrate the feature
+            await checkHealth(true);
+            
+            // Ensure table is re-rendered
+            renderTable();
+            refreshIcon.classList.remove('spin');
+        });
+
+        // Initialize setup
+        function requestNotificationPermission() {
+            if ("Notification" in window) {
+                if (Notification.permission !== "granted" && Notification.permission !== "denied") {
+                    Notification.requestPermission();
+                }
+            }
+        }
+        function showBrowserNotification(title, options) {
+            if ("Notification" in window && Notification.permission === "granted") {
+                new Notification(title, options);
+            }
+        }
+        
+        requestNotificationPermission();
+
+        // Build Notes
+        function getLatestBuildId() {
+            return allBuilds.length > 0 ? allBuilds[0].id : null;
+        }
+
+        async function updateAIPrediction() {
+            const predBadge = document.getElementById('prediction-badge');
+            predBadge.style.display = 'block';
+            predBadge.textContent = 'Predicting...';
+            
+            try {
+                const pastBuilds = allBuilds.slice(0, 5).map(b => ({
+                    id: b.id,
+                    status: b.status,
+                    duration: b.duration,
+                    commit: b.commit
+                }));
+                const res = await fetch('/api/predict-build', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ builds: pastBuilds })
+                });
+                
+                if (res.ok) {
+                    const data = await res.json();
+                    predBadge.innerHTML = `<span style="font-size:10px; opacity:0.8; margin-right:4px;">AI Predict</span> ${data.probability}`;
+                } else {
+                    predBadge.style.display = 'none';
+                }
+            } catch (e) {
+                predBadge.style.display = 'none';
+            }
+        }
+
+        function loadLatestBuildNotes() {
+            const buildId = getLatestBuildId();
+            if (!buildId) return;
+            const notes = localStorage.getItem(`deployflow_notes_${buildId}`);
+            if (notes) {
+                document.getElementById('latest-build-notes').value = notes;
+            } else {
+                document.getElementById('latest-build-notes').value = '';
+            }
+        }
+
+        function saveLatestBuildNotes() {
+            const buildId = getLatestBuildId();
+            if (!buildId) return;
+            const notes = document.getElementById('latest-build-notes').value;
+            localStorage.setItem(`deployflow_notes_${buildId}`, notes);
+        }
+
+        // Initialize
+        loadLatestBuildNotes();
+        updateMetrics();
+        renderTable();
+        checkHealth();
+        updateAIPrediction();
+        
+        // Fetch Real-time Github Stats
+        async function fetchGitHubStats() {
+            const apiStatusDot = document.getElementById('gh-api-status');
+            const lastSyncedDiv = document.getElementById('gh-last-synced');
+            
+            try {
+                // Using docker/cli as a mock for the pipeline's repository to show real data
+                const res = await fetch('https://api.github.com/repos/docker/cli');
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById('gh-stars').textContent = data.stargazers_count.toLocaleString();
+                    document.getElementById('gh-forks').textContent = data.forks_count.toLocaleString();
+                    document.getElementById('gh-issues').textContent = data.open_issues_count.toLocaleString();
+                    
+                    apiStatusDot.style.backgroundColor = 'var(--success)';
+                    
+                    const updatedDate = new Date(data.updated_at);
+                    lastSyncedDiv.textContent = `Last Synced: ${updatedDate.toLocaleString()}`;
+                } else {
+                    throw new Error('Failed to fetch');
+                }
+            } catch(e) {
+                document.getElementById('gh-stars').textContent = 'N/A';
+                document.getElementById('gh-forks').textContent = 'N/A';
+                document.getElementById('gh-issues').textContent = 'N/A';
+                
+                apiStatusDot.style.backgroundColor = '#ef4444'; // Red for failed/rate-limited
+                lastSyncedDiv.textContent = 'Sync failed. Rate limited or API unreachable.';
+            }
+        }
+        fetchGitHubStats();
+
+        // Check health every 30 seconds (without simulated building bar)
+        setInterval(() => checkHealth(false), 30000);
+
+    </script>
+</body>
+</html>

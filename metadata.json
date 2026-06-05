@@ -1,0 +1,6 @@
+{
+  "name": "DeployFlow CI",
+  "description": "A CI/CD pipeline demonstration project with automated linting, testing, Docker build, and deployment simulation.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
