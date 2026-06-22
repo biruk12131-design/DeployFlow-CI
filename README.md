@@ -1,12 +1,35 @@
+
 # DeployFlow CI
 
-![CI/CD](https://img.shields.io/badge/CI%2FCD-Pipeline-blue)
-![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?logo=github-actions&logoColor=white)
-![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)
-![Node.js](https://img.shields.io/badge/Node.js-339933?logo=nodedotjs&logoColor=white)
-![Express](https://img.shields.io/badge/Express-000000?logo=express&logoColor=white)
+![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub_Actions-2088FF?logo=github-actions)
+![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker)
+![Node.js](https://img.shields.io/badge/Node.js-20-green?logo=node.js)
+![Express](https://img.shields.io/badge/Express-4-lightgrey?logo=express)
+![Deploy](https://img.shields.io/badge/Deploy-Render-46E3B7?logo=render)
 
-A CI/CD pipeline demonstration project with automated linting, testing, Docker build, and deployment simulation. Built with Node.js, GitHub Actions, and Docker.
+A demonstration of a complete CI/CD pipeline using GitHub Actions, Docker, and a simple Node.js/Express web app. Includes linting, testing, Docker build, and a simulated deployment step.
+
+🚀 Live Demo
+
+https://deployflow-ci.onrender.com/
+
+✨ Pipeline Workflow
+
+· Trigger: Push to main or pull request.
+· Lint – ESLint.
+· Test – Jest + Supertest.
+· Build & Deploy – Docker image build, simulated Render deployment.
+
+🛠 Tech Stack
+
+· Runtime: Node.js
+· Framework: Express
+· CI/CD: GitHub Actions
+· Container: Docker
+· Testing: Jest, Supertest
+· Linting: ESLint
+· Deployment: Render
+
 
 ## Project Structure
 
@@ -33,79 +56,15 @@ DeployFlow-CI/
 └── src/                      # Source code components and styles
 ```
 
-## Directory Guide
 
-| Directory | Purpose |
-|-----------|---------|
-| `.github/` | GitHub Actions workflows, issue templates, and CI/CD configurations |
-| `app/` | Next.js application code, pages, and routes |
-| `assets/` | Static assets like images, icons, fonts, and media files |
-| `hooks/` | Custom React hooks for state management or shell scripts for CI/CD |
-| `lib/` | Shared utility functions, helper modules, and libraries |
-| `public/` | Publicly accessible static files and assets |
-| `src/` | Source code for components, styles, and application logic |
+📸 Screenshot
 
-## Configuration Files
+https://placehold.co/800x500?text=DeployFlow+CI
 
-| File | Purpose |
-|------|---------|
-| `.env.example` | Template for required environment variables |
-| `.eslintrc.json` | ESLint rules for code quality and standards |
-| `Dockerfile` | Docker container image definition for deployment |
-| `next.config.ts` | Next.js build and runtime configuration |
-| `tsconfig.json` | TypeScript compiler and type-checking options |
-| `package.json` | Project dependencies, scripts, and metadata |
-| `postcss.config.mjs` | CSS post-processing and transformation configuration |
-| `render.yaml` | Deployment configuration for Render platform |
-| `metadata.json` | Project metadata and configuration information |
+🚦 Getting Started
 
-## Technology Stack
-
-- **Framework**: Next.js
-- **Language**: TypeScript
-- **Styling**: PostCSS
-- **Code Quality**: ESLint
-- **Containerization**: Docker
-- **Deployment**: Render
-- **Package Manager**: npm
-
-## Language Composition
-
-- HTML: 94.7%
-- JavaScript: 2.9%
-- TypeScript: 2.2%
-- Other: 0.2%
-
-## Development
-
-Install dependencies:
 ```bash
+git clone https://github.com/birukdev12-senior/deployflow-ci.git
+cd deployflow-ci
 npm install
-```
-
-Start the application:
-```bash
-npm start
-```
-
-Run tests:
-```bash
 npm test
-```
-
-Run linting:
-```bash
-npx eslint src/
-```
-
-## Docker
-
-Build the image:
-```bash
-docker build -t deployflow-ci .
-```
-
-Run the container:
-```bash
-docker run -p 3000:3000 deployflow-ci
-```
