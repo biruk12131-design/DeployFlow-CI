@@ -31,6 +31,7 @@ https://deployflow-ci.onrender.com/
 · Deployment: Render
 
 
+
 ## Project Structure
 
 ```
@@ -57,6 +58,7 @@ DeployFlow-CI/
 ```
 
 
+
 📸 Screenshot
 
 https://placehold.co/800x500?text=DeployFlow+CI
@@ -68,3 +70,7 @@ git clone https://github.com/birukdev12-senior/deployflow-ci.git
 cd deployflow-ci
 npm install
 npm test
+
+📜 License
+
+MIT License.
