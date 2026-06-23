@@ -61,7 +61,7 @@ DeployFlow-CI/
 
 📸 Screenshot
 
-https://placehold.co/800x500?text=DeployFlow+CI
+![DeployFlow-CI](Copilot_20260624_011659.png)
 
 🚦 Getting Started
 
